@@ -1,0 +1,5 @@
+streamlit
+tensorflow-cpu
+huggingface_hub
+pillow
+numpy
