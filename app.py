@@ -14,22 +14,28 @@ MODELS_INFO = {
         "filename": "best_efficientnet_gradual.keras",
         "input_size": (224, 224),
         "preprocess_input": None,  # tidak pakai Lambda preprocess_input
+        "accuracy": 0.96,
+        "loss": 0.0246,
     },
     "Xception": {
         "filename": "best_xception_gradual.keras",
         "input_size": (224, 224),
         "preprocess_input": tf.keras.applications.xception.preprocess_input,
+        "accuracy": 0.96,
+        "loss": 0.1611,
     },
     "ResNet50": {
         "filename": "best_resnet50_gradual.keras",
         "input_size": (224, 224),
         "preprocess_input": tf.keras.applications.resnet50.preprocess_input,
+        "accuracy": 0.97,
+        "loss": 0.1317,
     },
 }
 
 CLASS_NAMES = ["Asli", "AI-Generated"]
 
-st.set_page_config(page_title="Deteksi Citra Asli vs AI", page_icon="🖼️", layout="centered")
+st.set_page_config(page_title="Klasifikasi Citra Asli vs Citra Generatif AI", page_icon="🖼️", layout="centered")
 
 
 @st.cache_resource(show_spinner=False)
@@ -61,8 +67,8 @@ def predict(model, image: Image.Image, input_size):
 # ============================================================
 # UI
 # ============================================================
-st.title("🖼️ Deteksi Citra Asli vs AI-Generated")
-st.write("Upload gambar, pilih model, lalu klik **Klasifikasi** untuk melihat hasil prediksi.")
+st.title("🖼️ Klasifikasi Citra Asli vs Citra Generatif AI")
+st.write("Upload gambar, pilih model, lalu klik **Klasifikasi** untuk melihat hasil klasifikasi.")
 
 model_key = st.selectbox("Pilih model", list(MODELS_INFO.keys()))
 
@@ -99,6 +105,15 @@ if uploaded_file is not None:
         st.write("AI-Generated")
         st.progress(prob_ai)
         st.caption(f"{prob_ai * 100:.2f}%")
+
+        st.divider()
+        st.subheader("Kinerja Model")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Akurasi Model", f"{info['accuracy'] * 100:.0f}%")
+        with col2:
+            st.metric("Loss Model", f"{info['loss']:.4f}")
+        st.caption(f"Nilai akurasi dan loss didapat dari hasil evaluasi model {model_key} pada data uji.")
 
 st.divider()
 st.caption("Model: EfficientNet, Xception, ResNet50 — hasil transfer learning (gradual unfreezing).")
