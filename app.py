@@ -12,18 +12,18 @@ HF_REPO_ID = "desif5943-blip/klasifikasi-ai-asli"
 MODELS_INFO = {
     "EfficientNet (paling ringan)": {
         "filename": "best_efficientnet_gradual.keras",
-        "preprocess": tf.keras.applications.efficientnet.preprocess_input,
         "input_size": (224, 224),
+        "preprocess_input": None,  # tidak pakai Lambda preprocess_input
     },
     "Xception": {
         "filename": "best_xception_gradual.keras",
-        "preprocess": tf.keras.applications.xception.preprocess_input,
         "input_size": (224, 224),
+        "preprocess_input": tf.keras.applications.xception.preprocess_input,
     },
     "ResNet50": {
         "filename": "best_resnet50_gradual.keras",
-        "preprocess": tf.keras.applications.resnet50.preprocess_input,
         "input_size": (224, 224),
+        "preprocess_input": tf.keras.applications.resnet50.preprocess_input,
     },
 }
 
@@ -37,14 +37,22 @@ def load_model(model_key: str):
     """Download model dari Hugging Face Hub (sekali saja, lalu di-cache) dan load."""
     info = MODELS_INFO[model_key]
     model_path = hf_hub_download(repo_id=HF_REPO_ID, filename=info["filename"])
-    model = tf.keras.models.load_model(model_path)
+
+    custom_objects = None
+    if info["preprocess_input"] is not None:
+        custom_objects = {"preprocess_input": info["preprocess_input"]}
+
+    model = tf.keras.models.load_model(
+        model_path, custom_objects=custom_objects, safe_mode=False
+    )
     return model
 
 
-def predict(model, image: Image.Image, preprocess_fn, input_size):
+def predict(model, image: Image.Image, input_size):
+    # Model sudah punya layer Rescaling/Normalization built-in di dalamnya,
+    # jadi cukup kirim gambar mentah (0-255) tanpa preprocess_input tambahan.
     img = image.convert("RGB").resize(input_size)
     arr = np.array(img).astype("float32")
-    arr = preprocess_fn(arr)
     arr = np.expand_dims(arr, axis=0)
     pred = model.predict(arr, verbose=0)[0]
     return pred
@@ -68,7 +76,7 @@ if uploaded_file is not None:
         info = MODELS_INFO[model_key]
         with st.spinner(f"Memuat model {model_key} dan memproses gambar..."):
             model = load_model(model_key)
-            pred = predict(model, image, info["preprocess"], info["input_size"])
+            pred = predict(model, image, info["input_size"])
 
         # Tangani output sigmoid (1 neuron) atau softmax (2 neuron)
         if pred.shape[0] == 1:
