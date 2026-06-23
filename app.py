@@ -16,6 +16,9 @@ MODELS_INFO = {
         "preprocess_input": None,  # tidak pakai Lambda preprocess_input
         "accuracy": 0.96,
         "loss": 0.0246,
+        "precision": 0.94,
+        "recall": 0.96,
+        "f1_score": 0.96,
     },
     "Xception": {
         "filename": "best_xception_gradual.keras",
@@ -23,6 +26,9 @@ MODELS_INFO = {
         "preprocess_input": tf.keras.applications.xception.preprocess_input,
         "accuracy": 0.96,
         "loss": 0.1611,
+        "precision": 0.94,
+        "recall": 0.96,
+        "f1_score": 0.96,
     },
     "ResNet50": {
         "filename": "best_resnet50_gradual.keras",
@@ -30,6 +36,9 @@ MODELS_INFO = {
         "preprocess_input": tf.keras.applications.resnet50.preprocess_input,
         "accuracy": 0.97,
         "loss": 0.1317,
+        "precision": 0.97,
+        "recall": 0.97,
+        "f1_score": 0.97,
     },
 }
 
@@ -55,8 +64,6 @@ def load_model(model_key: str):
 
 
 def predict(model, image: Image.Image, input_size):
-    # Model sudah punya layer Rescaling/Normalization built-in di dalamnya,
-    # jadi cukup kirim gambar mentah (0-255) tanpa preprocess_input tambahan.
     img = image.convert("RGB").resize(input_size)
     arr = np.array(img).astype("float32")
     arr = np.expand_dims(arr, axis=0)
@@ -84,7 +91,6 @@ if uploaded_file is not None:
             model = load_model(model_key)
             pred = predict(model, image, info["input_size"])
 
-        # Tangani output sigmoid (1 neuron) atau softmax (2 neuron)
         if pred.shape[0] == 1:
             prob_ai = float(pred[0])
             prob_asli = 1 - prob_ai
@@ -113,7 +119,16 @@ if uploaded_file is not None:
             st.metric("Akurasi Model", f"{info['accuracy'] * 100:.0f}%")
         with col2:
             st.metric("Loss Model", f"{info['loss']:.4f}")
-        st.caption(f"Nilai akurasi dan loss didapat dari hasil evaluasi model {model_key} pada data uji.")
+
+        col3, col4, col5 = st.columns(3)
+        with col3:
+            st.metric("Precision", f"{info['precision'] * 100:.0f}%")
+        with col4:
+            st.metric("Recall", f"{info['recall'] * 100:.0f}%")
+        with col5:
+            st.metric("F1-Score", f"{info['f1_score'] * 100:.0f}%")
+
+        st.caption(f"Nilai-nilai di atas didapat dari hasil evaluasi model {model_key} pada data uji.")
 
 st.divider()
 st.caption("Model: EfficientNet, Xception, ResNet50 — hasil transfer learning (gradual unfreezing).")
