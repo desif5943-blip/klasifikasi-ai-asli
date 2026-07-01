@@ -8,7 +8,8 @@ import pandas as pd
 # ============================================================
 # KONFIGURASI
 # ============================================================
-HF_REPO_ID = "desif5943-blip/-ai-asli"
+# PERBAIKAN: Mengubah ID repositori sesuai dengan nama yang valid di Hugging Face
+HF_REPO_ID = "desif5943-blip/klasifikasi-ai-asli"
 
 MODELS_INFO = {
     "EfficientNetB0": {
@@ -17,7 +18,7 @@ MODELS_INFO = {
         "preprocess_fn": tf.keras.applications.efficientnet.preprocess_input,
         "accuracy":  0.4211,
         "loss":      1.7116,
-        "precision": 0.4226,   # isi setelah jalankan script evaluasi
+        "precision": 0.4226,
         "recall":    0.4278,
         "f1_score":  0.4146,
     },
@@ -37,7 +38,7 @@ MODELS_INFO = {
         "preprocess_fn": tf.keras.applications.resnet50.preprocess_input,
         "accuracy":  0.7895,
         "loss":      0.9144,
-        "precision": 0.8036,   # isi setelah jalankan script evaluasi
+        "precision": 0.8036,
         "recall":    0.7833,
         "f1_score":  0.7841,
     },
@@ -240,5 +241,5 @@ st.divider()
 st.caption(
     "Model: EfficientNetB0, Xception, ResNet50 — "
     "Transfer learning dengan teknik gradual unfreezing. | "
-    "Repositori model: desif5943-blip/-ai-asli (Hugging Face Hub)"
+    "Repositori model: desif5943-blip/klasifikasi-ai-asli (Hugging Face Hub)"
 )
