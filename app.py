@@ -3,56 +3,56 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 from huggingface_hub import hf_hub_download
+import pandas as pd
 
 # ============================================================
-# KONFIGURASI — sesuaikan dengan repo Hugging Face kamu
+# KONFIGURASI
 # ============================================================
-HF_REPO_ID = "USERNAME_HF/NAMA_REPO_HF"  # ganti ini
+HF_REPO_ID = "desif5943-blip/-ai-asli"
 
 MODELS_INFO = {
     "EfficientNetB0": {
         "filename": "best_efficientnet_gradual.keras",
         "input_size": (224, 224),
         "preprocess_fn": tf.keras.applications.efficientnet.preprocess_input,
-        "accuracy": 0.00,   # ganti dengan hasil test accuracy kamu
-        "loss": 0.0000,     # ganti dengan hasil test loss kamu
-        "precision": 0.00,
-        "recall": 0.00,
-        "f1_score": 0.00,
+        "accuracy":  0.4211,
+        "loss":      1.7116,
+        "precision": 0.4226,   # isi setelah jalankan script evaluasi
+        "recall":    0.4278,
+        "f1_score":  0.4146,
     },
     "Xception": {
         "filename": "best_xception_gradual.keras",
         "input_size": (224, 224),
         "preprocess_fn": tf.keras.applications.xception.preprocess_input,
-        "accuracy": 0.00,
-        "loss": 0.0000,
-        "precision": 0.00,
-        "recall": 0.00,
-        "f1_score": 0.00,
+        "accuracy":  0.8421,
+        "loss":      0.4330,
+        "precision": 0.8444,
+        "recall":    0.8444,
+        "f1_score":  0.8421,
     },
     "ResNet50": {
         "filename": "best_resnet50_gradual.keras",
         "input_size": (224, 224),
         "preprocess_fn": tf.keras.applications.resnet50.preprocess_input,
-        "accuracy": 0.00,
-        "loss": 0.0000,
-        "precision": 0.00,
-        "recall": 0.00,
-        "f1_score": 0.00,
+        "accuracy":  0.7895,
+        "loss":      0.9144,
+        "precision": 0.8036,   # isi setelah jalankan script evaluasi
+        "recall":    0.7833,
+        "f1_score":  0.7841,
     },
 }
 
-CLASS_NAMES = ["Citra asli", "Citra Generatif AI"]
+CLASS_NAMES = ["Citra Asli", "Citra Generatif AI"]
 
 st.set_page_config(
-    page_title="Klasifikasi Citra Asli vs Citra Generatif AI",
-    page_icon="🖼️",
-    layout="centered"
+    page_title="Perbandingan Klasifikasi Citra Asli vs Citra Generatif AI",
+    page_icon="🤖",
+    layout="wide"
 )
 
-
 # ============================================================
-# LOAD MODEL (didownload dari Hugging Face, di-cache)
+# LOAD MODEL (di-cache, hanya download sekali)
 # ============================================================
 @st.cache_resource(show_spinner=False)
 def load_model(model_key: str):
@@ -61,7 +61,6 @@ def load_model(model_key: str):
         repo_id=HF_REPO_ID,
         filename=info["filename"]
     )
-    # custom_objects wajib karena model punya Lambda(preprocess_input) di dalamnya
     model = tf.keras.models.load_model(
         model_path,
         custom_objects={"preprocess_input": info["preprocess_fn"]},
@@ -69,30 +68,37 @@ def load_model(model_key: str):
     )
     return model
 
-
 # ============================================================
 # FUNGSI PREDIKSI
 # ============================================================
 def predict(model, image: Image.Image, input_size):
-    # Model sudah menangani preprocessing sendiri via Lambda layer
-    # cukup kirim citra mentah (nilai piksel 0-255)
     img = image.convert("RGB").resize(input_size)
     arr = np.array(img).astype("float32")
     arr = np.expand_dims(arr, axis=0)
     pred = model.predict(arr, verbose=0)[0]
     return pred
 
+def parse_pred(pred):
+    if pred.shape[0] == 1:
+        prob_ai   = float(pred[0])
+        prob_asli = 1 - prob_ai
+    else:
+        prob_asli = float(pred[0])
+        prob_ai   = float(pred[1])
+    label      = CLASS_NAMES[0] if prob_asli > prob_ai else CLASS_NAMES[1]
+    confidence = max(prob_asli, prob_ai) * 100
+    return label, confidence, prob_asli, prob_ai
 
 # ============================================================
-# UI
+# UI — HEADER
 # ============================================================
-st.title("🖼️ Klasifikasi Citra Asli vs Citra Generatif AI")
+st.title("🖼️ Perbandingan Klasifikasi Citra Asli vs Citra Generatif AI")
 st.write(
-    "Upload gambar, pilih model, lalu klik **Klasifikasi** "
-    "untuk melihat hasil klasifikasi."
+    "Upload gambar lalu klik **Klasifikasi Semua Model** — "
+    "ketiga model akan berjalan sekaligus dan hasilnya "
+    "ditampilkan berdampingan untuk perbandingan."
 )
-
-model_key = st.selectbox("Pilih model", list(MODELS_INFO.keys()))
+st.divider()
 
 uploaded_file = st.file_uploader(
     "Upload gambar (jpg/jpeg/png)",
@@ -101,63 +107,138 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Gambar yang diupload", use_container_width=True)
 
-    if st.button("🔍 Klasifikasi", type="primary"):
-        info = MODELS_INFO[model_key]
+    col_img, col_info = st.columns([1, 2])
+    with col_img:
+        st.image(image, caption="Gambar yang diupload",
+                 use_container_width=True)
+    with col_info:
+        st.info(
+            "Klik tombol di bawah untuk menjalankan ketiga model sekaligus.\n\n"
+            "Model yang pertama kali digunakan akan didownload dari "
+            "Hugging Face Hub dan disimpan di cache — "
+            "proses ini hanya terjadi satu kali per sesi."
+        )
 
-        with st.spinner(f"Memuat model {model_key} dan memproses gambar..."):
+    st.divider()
+
+    if st.button("🔍 Klasifikasi Semua Model",
+                 type="primary", use_container_width=True):
+
+        # ── Jalankan ketiga model ──────────────────────────────
+        hasil = {}
+        progress_bar = st.progress(0, text="Mempersiapkan model...")
+
+        for idx, model_key in enumerate(MODELS_INFO):
+            progress_bar.progress(
+                (idx) / len(MODELS_INFO),
+                text=f"Memuat & menjalankan {model_key}..."
+            )
             model = load_model(model_key)
-            pred  = predict(model, image, info["input_size"])
+            pred  = predict(
+                model, image, MODELS_INFO[model_key]["input_size"]
+            )
+            label, confidence, prob_asli, prob_ai = parse_pred(pred)
+            hasil[model_key] = {
+                "label":      label,
+                "confidence": confidence,
+                "prob_asli":  prob_asli,
+                "prob_ai":    prob_ai,
+            }
 
-        # Tangani output softmax (2 neuron) atau sigmoid (1 neuron)
-        if pred.shape[0] == 1:
-            prob_ai   = float(pred[0])
-            prob_asli = 1 - prob_ai
-        else:
-            prob_asli = float(pred[0])
-            prob_ai   = float(pred[1])
+        progress_bar.progress(1.0, text="Selesai!")
 
-        label      = CLASS_NAMES[0] if prob_asli > prob_ai else CLASS_NAMES[1]
-        confidence = max(prob_asli, prob_ai) * 100
+        # ── Hasil ketiga model berdampingan ───────────────────
+        st.subheader("📊 Hasil Klasifikasi Ketiga Model")
+        col1, col2, col3 = st.columns(3)
 
+        for col, model_key in zip([col1, col2, col3], MODELS_INFO):
+            info = MODELS_INFO[model_key]
+            h    = hasil[model_key]
+
+            with col:
+                st.markdown(f"### {model_key}")
+                st.divider()
+
+                warna  = "🟢" if h["label"] == CLASS_NAMES[0] else "🔴"
+                st.markdown(f"**Hasil: {warna} {h['label']}**")
+                st.metric("Tingkat Keyakinan", f"{h['confidence']:.2f}%")
+
+                st.write("**Probabilitas per Kelas:**")
+                st.write("Citra Asli")
+                st.progress(h["prob_asli"])
+                st.caption(f"{h['prob_asli'] * 100:.2f}%")
+
+                st.write("Citra Generatif AI")
+                st.progress(h["prob_ai"])
+                st.caption(f"{h['prob_ai'] * 100:.2f}%")
+
+                st.divider()
+                st.write("**Kinerja Model (Data Uji):**")
+                st.metric("Akurasi",   f"{info['accuracy']  * 100:.2f}%")
+                st.metric("Loss",      f"{info['loss']:.4f}")
+                st.metric("Precision", f"{info['precision'] * 100:.2f}%")
+                st.metric("Recall",    f"{info['recall']    * 100:.2f}%")
+                st.metric("F1-Score",  f"{info['f1_score']  * 100:.2f}%")
+                st.caption(
+                    f"Nilai kinerja dari hasil evaluasi "
+                    f"model {model_key} pada data uji."
+                )
+
+        # ── Tabel ringkasan perbandingan ──────────────────────
         st.divider()
-        st.subheader(f"Hasil: **{label}**")
-        st.write(f"Tingkat keyakinan: **{confidence:.2f}%**")
+        st.subheader("📋 Tabel Ringkasan Perbandingan Ketiga Model")
 
-        st.write("Citra Asli")
-        st.progress(prob_asli)
-        st.caption(f"{prob_asli * 100:.2f}%")
+        rows = []
+        for model_key in MODELS_INFO:
+            info = MODELS_INFO[model_key]
+            h    = hasil[model_key]
+            rows.append({
+                "Model":              model_key,
+                "Hasil Klasifikasi":  h["label"],
+                "Keyakinan (%)":      f"{h['confidence']:.2f}",
+                "Prob. Asli (%)":     f"{h['prob_asli']  * 100:.2f}",
+                "Prob. AI (%)":       f"{h['prob_ai']    * 100:.2f}",
+                "Akurasi (%)":        f"{info['accuracy']  * 100:.2f}",
+                "Loss":               f"{info['loss']:.4f}",
+                "Precision (%)":      f"{info['precision'] * 100:.2f}",
+                "Recall (%)":         f"{info['recall']    * 100:.2f}",
+                "F1-Score (%)":       f"{info['f1_score']  * 100:.2f}",
+            })
 
-        st.write("Citra Generatif AI")
-        st.progress(prob_ai)
-        st.caption(f"{prob_ai * 100:.2f}%")
+        df = pd.DataFrame(rows)
+        st.dataframe(df, use_container_width=True, hide_index=True)
 
-        # ── Kinerja Model ──────────────────────────────────────
+        # ── Kesimpulan otomatis ───────────────────────────────
         st.divider()
-        st.subheader("Kinerja Model")
+        st.subheader("💡 Kesimpulan Perbandingan")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Akurasi Model", f"{info['accuracy'] * 100:.2f}%")
-        with col2:
-            st.metric("Loss Model", f"{info['loss']:.4f}")
+        model_terbaik = max(
+            MODELS_INFO,
+            key=lambda k: MODELS_INFO[k]["accuracy"]
+        )
+        label_mayoritas = max(
+            set(h["label"] for h in hasil.values()),
+            key=lambda l: sum(
+                1 for h in hasil.values() if h["label"] == l
+            )
+        )
+        jumlah_setuju = sum(
+            1 for h in hasil.values()
+            if h["label"] == label_mayoritas
+        )
 
-        col3, col4, col5 = st.columns(3)
-        with col3:
-            st.metric("Precision", f"{info['precision'] * 100:.2f}%")
-        with col4:
-            st.metric("Recall", f"{info['recall'] * 100:.2f}%")
-        with col5:
-            st.metric("F1-Score", f"{info['f1_score'] * 100:.2f}%")
-
-        st.caption(
-            f"Nilai di atas merupakan hasil evaluasi model {model_key} "
-            "pada data uji."
+        st.success(
+            f"**{jumlah_setuju} dari 3 model** sepakat bahwa gambar ini "
+            f"adalah **{label_mayoritas}**.\n\n"
+            f"Model dengan akurasi tertinggi pada data uji adalah "
+            f"**{model_terbaik}** "
+            f"({MODELS_INFO[model_terbaik]['accuracy']*100:.2f}%)."
         )
 
 st.divider()
 st.caption(
     "Model: EfficientNetB0, Xception, ResNet50 — "
-    "Transfer learning dengan teknik gradual unfreezing."
+    "Transfer learning dengan teknik gradual unfreezing. | "
+    "Repositori model: desif5943-blip/-ai-asli (Hugging Face Hub)"
 )
