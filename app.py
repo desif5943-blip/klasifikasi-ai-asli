@@ -93,7 +93,7 @@ def parse_pred(pred):
 # ============================================================
 # UI — HEADER
 # ============================================================
-st.title("🖼️ Perbandingan Klasifikasi Citra Asli vs Citra Generatif AI")
+st.title("🤖 Klasifikasi Citra Asli vs Citra Generatif AI")
 st.write(
     "Upload gambar lalu klik **Klasifikasi Semua Model** — "
     "ketiga model akan berjalan sekaligus dan hasilnya "
