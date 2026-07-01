@@ -46,7 +46,7 @@ MODELS_INFO = {
 CLASS_NAMES = ["Citra Asli", "Citra Generatif AI"]
 
 st.set_page_config(
-    page_title="Perbandingan Klasifikasi Citra Asli vs Citra Generatif AI",
+    page_title="Klasifikasi Citra Asli vs Citra Generatif AI",
     page_icon="🤖",
     layout="wide"
 )
