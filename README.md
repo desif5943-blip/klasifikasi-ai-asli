@@ -1,4 +1,4 @@
-# Deteksi Citra Asli vs AI-Generated (Streamlit + GitHub + Hugging Face)
+# Klasifikasi Citra Asli vs AI-Generated (Streamlit + GitHub + Hugging Face)
 
 Aplikasi web untuk mengklasifikasi gambar sebagai **Asli** atau **AI-Generated**,
 menggunakan 3 model pilihan: EfficientNet, Xception, ResNet50.
