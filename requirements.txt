@@ -1,6 +1,6 @@
-streamlit
-numpy
-Pillow
+streamlit>=1.38.0
+numpy>=1.26.0,<2.2
+Pillow>=10.0.0
 tensorflow==2.20.0
-huggingface_hub
-pandas
+huggingface_hub>=0.24.0
+pandas>=2.0.0
