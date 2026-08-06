@@ -8,39 +8,43 @@ import pandas as pd
 # ============================================================
 # KONFIGURASI
 # ============================================================
-# PERBAIKAN: Mengubah ID repositori sesuai dengan nama yang valid di Hugging Face
 HF_REPO_ID = "desif5943-blip/klasifikasi-ai-asli"
 
+# Nilai accuracy / loss / precision / recall / f1_score di bawah ini
+# diambil dari hasil evaluasi TAHAP 2 (fine-tuning) pada DATA UJI
+# (test set, 2000 gambar) sesuai log training masing-masing model.
+# precision / recall / f1_score menggunakan nilai "macro avg" dari
+# classification_report.
 MODELS_INFO = {
     "EfficientNetB0": {
         "filename": "best_efficientnet_gradual.keras",
         "input_size": (224, 224),
         "preprocess_fn": tf.keras.applications.efficientnet.preprocess_input,
-        "accuracy":  0.4211,
-        "loss":      1.7116,
-        "precision": 0.4226,
-        "recall":    0.4278,
-        "f1_score":  0.4146,
+        "accuracy":  0.8395,
+        "loss":      0.4705,
+        "precision": 0.84,
+        "recall":    0.84,
+        "f1_score":  0.84,
     },
     "Xception": {
         "filename": "best_xception_gradual.keras",
         "input_size": (224, 224),
         "preprocess_fn": tf.keras.applications.xception.preprocess_input,
-        "accuracy":  0.8421,
-        "loss":      0.4330,
-        "precision": 0.8444,
-        "recall":    0.8444,
-        "f1_score":  0.8421,
+        "accuracy":  0.9110,
+        "loss":      0.2583,
+        "precision": 0.91,
+        "recall":    0.91,
+        "f1_score":  0.91,
     },
     "ResNet50": {
         "filename": "best_resnet50_gradual.keras",
         "input_size": (224, 224),
         "preprocess_fn": tf.keras.applications.resnet50.preprocess_input,
-        "accuracy":  0.7895,
-        "loss":      0.9144,
-        "precision": 0.8036,
-        "recall":    0.7833,
-        "f1_score":  0.7841,
+        "accuracy":  0.8715,
+        "loss":      0.3486,
+        "precision": 0.87,
+        "recall":    0.87,
+        "f1_score":  0.87,
     },
 }
 
@@ -240,6 +244,7 @@ if uploaded_file is not None:
 st.divider()
 st.caption(
     "Model: EfficientNetB0, Xception, ResNet50 — "
-    "Transfer learning dengan teknik gradual unfreezing. | "
+    "Transfer learning dengan teknik gradual unfreezing (2 tahap: "
+    "classifier-only lalu fine-tuning bertahap). | "
     "Repositori model: desif5943-blip/klasifikasi-ai-asli (Hugging Face Hub)"
 )
